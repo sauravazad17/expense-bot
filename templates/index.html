@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Personal Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #828282;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .chat-wrapper {
+      max-width: 1100px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      height: 85vh;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .bot-msg, .user-msg {
+      margin-bottom: 15px;
+      padding: 12px 15px;
+      border-radius: 8px;
+      max-width: 80%;
+      white-space: pre-wrap;
+    }
+
+    .bot-msg {
+      background: #ffffff;
+      border: 1px solid #ddd;
+    }
+
+    .user-msg {
+      background: #ADD8E6;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .input-area {
+      border-top: 1px solid #ddd;
+      padding: 10px;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    button {
+      padding: 0 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #sendBtn {
+      background: #007bff;
+      color: white;
+    }
+
+    #micBtn {
+      background: white;
+      border: 1px solid #ccc;
+      font-size: 18px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>Personal Assistant</header>
+
+<div class="chat-wrapper">
+  <div class="chat-box" id="chatBox">
+    <div class="bot-msg">
+      <b>Welcome! Saurav 😊</b><br><br>
+      You can add expenses or ask for summaries.
+    </div>
+  </div>
+
+  <div class="input-area">
+    <form id="chatForm">
+      <input
+        type="text"
+        id="message"
+        placeholder="Type your message"
+        autocomplete="off"
+      />
+      <button type="button" id="micBtn">🎤</button>
+      <button type="submit" id="sendBtn">Send</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById("chatForm");
+  const input = document.getElementById("message");
+  const chatBox = document.getElementById("chatBox");
+  const micBtn = document.getElementById("micBtn");
+
+  // -----------------------
+  // SEND MESSAGE (ENTER + BUTTON)
+  // -----------------------
+  form.addEventListener("submit", function (e) {
+    e.preventDefault(); // ⛔ stop page reload
+
+    const text = input.value.trim();
+    if (!text) return; // ⛔ stop empty submit
+
+    addUserMessage(text);
+    input.value = "";
+
+    fetch("/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({ message: text })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.reply) addBotMessage(data.reply);
+    })
+    .catch(() => {
+      addBotMessage("❌ Error talking to server.");
+    });
+  });
+
+  // -----------------------
+  // MIC INPUT
+  // -----------------------
+  let recognition;
+  if ("webkitSpeechRecognition" in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    micBtn.addEventListener("click", () => {
+      recognition.start();
+    });
+
+    recognition.onresult = function (event) {
+      input.value = event.results[0][0].transcript;
+      input.focus();
+    };
+  } else {
+    micBtn.disabled = true;
+    micBtn.innerText = "❌";
+  }
+
+  // -----------------------
+  // UI HELPERS
+  // -----------------------
+  function addUserMessage(text) {
+    const div = document.createElement("div");
+    div.className = "user-msg";
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function addBotMessage(text) {
+    const div = document.createElement("div");
+    div.className = "bot-msg";
+    div.innerHTML = text;  // CHANGED: Use innerHTML to render HTML tags (like tables) instead of plain text
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
