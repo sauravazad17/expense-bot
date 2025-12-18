@@ -12,9 +12,20 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds = ServiceAccountCredentials.from_json_keyfile_name(
-    "credentials.json", scope
-)
+import os
+import json
+from oauth2client.service_account import ServiceAccountCredentials
+
+# Load Google credentials
+if os.getenv("GOOGLE_CREDS"):
+    # Production (Render)
+    creds_dict = json.loads(os.getenv("GOOGLE_CREDS"))
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+else:
+    # Local development
+    creds = ServiceAccountCredentials.from_json_keyfile_name(
+        "credentials.json", scope
+    )
 client = gspread.authorize(creds)
 
 SPREADSHEET_NAME = "Personal Expenses by Saurav"
