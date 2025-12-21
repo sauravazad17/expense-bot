@@ -14,7 +14,6 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Load Google credentials
 if os.getenv("GOOGLE_CREDS"):
     creds_dict = json.loads(os.getenv("GOOGLE_CREDS"))
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
@@ -54,6 +53,7 @@ CATEGORY_MAP = {
     "outdoor": "Outdoor Food Items",
     "food": "Outdoor Food Items",
     "grocery": "Other Groceries Items",
+    "other": "Other Groceries Items",
     "extra": "Extra/Additional Expenses"
 }
 
@@ -102,12 +102,22 @@ def extract_date(text):
     if "yesterday" in t or "kal" in t:
         return today - timedelta(days=1)
 
-    m = re.search(
+    # dec 20 / on dec 20 / december 20
+    m1 = re.search(
         r'(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)\s*(\d{1,2})',
         t
     )
-    if m:
-        mon, day = m.groups()
+    if m1:
+        mon, day = m1.groups()
+        return datetime(today.year, MONTH_MAP[mon], int(day))
+
+    # 20 dec / 20 december
+    m2 = re.search(
+        r'(\d{1,2})\s*(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)',
+        t
+    )
+    if m2:
+        day, mon = m2.groups()
         return datetime(today.year, MONTH_MAP[mon], int(day))
 
     return None
@@ -334,7 +344,7 @@ def index():
     if any(w in msg for w in ["last", "when"]):
         return jsonify({"reply": handle_last_spend(msg)})
 
-    return jsonify({"reply": "You can add expenses or ask for summaries."})
+    return jsonify({"reply": "You can only add expenses or ask for summaries."})
 
 # ================= RUN =================
 if __name__ == "__main__":
